@@ -119,9 +119,12 @@ if ./compare > /dev/null $file1 $file2
 fi
 
 echo
-echo Result with files not equal on last line:
+echo Result with files not equal on last \(8\) line:
 ./compare $file1 $file2
 echo
 echo Result with same multiline files:
 ./compare $sameMultiLineFile1 $sameMultiLineFile2
+echo
+echo Result with not exist files:
+./compare notExist.txt notExist.txt
 echo

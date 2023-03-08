@@ -4,6 +4,7 @@
 
 using namespace std;
 
+/*
 int GetDifferenceLine(ifstream& file1, ifstream& file2)
 {
 	string lineOfFile1, lineOfFile2;
@@ -50,7 +51,30 @@ int GetDifferenceLine(ifstream& file1, ifstream& file2)
 	{
 		return lineNum;
 	}
+}
+*/
 
+int GetDifferenceLine(ifstream& file1, ifstream& file2)
+{
+	string lineOfFile1, lineOfFile2;
+	unsigned int lineNum = 0;
+
+	while (true)
+	{
+		++lineNum;
+		if (lineOfFile1 != lineOfFile2)	return lineNum; // files are different in lineNum
+		if (!file1.eof())
+		{
+			getline(file1, lineOfFile1);
+			if (!file2.eof()) getline(file2, lineOfFile2);
+			else return lineNum; // not eof file1, eof file2
+		}
+		else
+		{
+			if (!file2.eof()) return lineNum; // eof file1, not eof file2
+			return 0; // eof file1, eof file2, no diff
+		}
+	}
 }
 
 
@@ -58,65 +82,66 @@ enum class ErrorCode
 {
 	SUCCESS,
 	FILE_OPENING_ERROR,
-	/* ... */
+	NOT_VALID_ARGS_COUNT
 };
 
-ErrorCode CompareFiles(const std::string& fileName1, const std::string& fileName2, int& differenceLine)
-{
-
-}
-
-int CompareFiles(const std::string& fileName1, const std::string& fileName2, ErrorCode& errorCode)
+int CompareFiles(char *argv[], ErrorCode& errorCode)
 {
 	errorCode = ErrorCode::SUCCESS;
-
-}
-
-int CompareFiles(const std::string& fileName1, const std::string& fileName2)
-{
-	throw std::runtime_error("Failed to open " + fileName1);
-}
-
-// TODO упростить main
-int main(int argc, char* argv[])
-{
-	if (argc != 3)
-	{
-		cout << "Invalid arguments count\n"
-			 << "Usage: copyfile.exe <input file> <output file>\n";
-		return 1;
-	}
-
 	ifstream file1(argv[1]);
 	if (!file1.is_open())
 	{
-		cout << "Failed to open " << argv[1] << " for reading\n";
+		errorCode = ErrorCode::FILE_OPENING_ERROR;
 		return 1;
 	}
 
 	ifstream file2(argv[2]);
 	if (!file2.is_open())
 	{
-		cout << "Failed to open " << argv[2] << " for reading\n";
+		errorCode = ErrorCode::FILE_OPENING_ERROR;
+		return 2;
+	}
+
+	return GetDifferenceLine(file1, file2);
+}
+
+void PrintResult(const int& filesComparingResult, const ErrorCode& errorCode, char *argv[])
+{
+	if (errorCode == ErrorCode::SUCCESS)
+	{
+		if (filesComparingResult == 0)
+		{
+			cout << "Files are equal\n";
+			return;
+		}
+		cout << "Files are different. Line number is " << filesComparingResult << "\n";
+		return;
+	}
+	if (errorCode == ErrorCode::FILE_OPENING_ERROR)
+	{
+		cout << "Unable to open " << argv[filesComparingResult] << "\n";
+	}
+}
+
+ErrorCode IsValidArgsCount(const int& argsCount)
+{
+	return (argsCount == 3) ? ErrorCode::SUCCESS : ErrorCode::NOT_VALID_ARGS_COUNT;
+}
+
+int main(int argc, char* argv[])
+{
+	ErrorCode errorCode = IsValidArgsCount(argc);
+
+	if (errorCode == ErrorCode::NOT_VALID_ARGS_COUNT)
+	{
+		cout << "Invalid arguments count\n"
+			 << "Usage: compare.exe <file1> <file2>\n";
 		return 1;
 	}
 
-	if (argv[1] == argv[2])
-	{
-		cout << "Files are equal\n";
-		return 0;
-	}
+	int comparingResult = CompareFiles(argv, errorCode);
+	PrintResult(comparingResult, errorCode, argv);
 
-	int comparingResult = GetDifferenceLine(file1, file2);
-
-	if (comparingResult == 0)
-	{
-		cout << "Files are equal\n";
-	}
-	else
-	{
-		cout << "Files are different. Line number is " << comparingResult << "\n";
-		return 1;
-	}
+	if ((errorCode == ErrorCode::FILE_OPENING_ERROR) || (comparingResult > 0)) return 1;
 	return 0;
 }
